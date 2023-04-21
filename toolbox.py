@@ -15,7 +15,7 @@ class ChatBotWithCookies(list):
             self.append(t)
 
     def get_list(self):
-        return [t for t in self]
+        return list(self)
 
     def get_cookies(self):
         return self._cookies
@@ -137,7 +137,7 @@ def write_results_to_file(history, file_name=None):
                 f.write('## ')
             f.write(content)
             f.write('\n\n')
-    res = '以上材料已经被写入' + os.path.abspath(f'./gpt_log/{file_name}')
+    res = f"以上材料已经被写入{os.path.abspath(f'./gpt_log/{file_name}')}"
     print(res)
     return res
 
@@ -167,16 +167,14 @@ def text_divide_paragraph(text):
     """
     将文本按照段落分隔符分割开，生成带有段落标签的HTML代码。
     """
-    if '```' in text:
-        # careful input
-        return text
-    else:
+    if '```' not in text:
         # wtf input
         lines = text.split("\n")
         for i, line in enumerate(lines):
             lines[i] = lines[i].replace(" ", "&nbsp;")
         text = "</br>".join(lines)
-        return text
+    # careful input
+    return text
 
 
 def markdown_convertion(txt):
@@ -264,11 +262,7 @@ def close_up_code_segment_during_stream(gpt_reply):
     # 排除了以上两个情况，我们
     segments = gpt_reply.split('```')
     n_mark = len(segments) - 1
-    if n_mark % 2 == 1:
-        # print('输出代码片段中！')
-        return gpt_reply+'\n```'
-    else:
-        return gpt_reply
+    return gpt_reply+'\n```' if n_mark % 2 == 1 else gpt_reply
 
 
 def format_io(self, y):
@@ -310,32 +304,29 @@ def extract_archive(file_path, dest_dir):
     if file_extension == '.zip':
         with zipfile.ZipFile(file_path, 'r') as zipobj:
             zipobj.extractall(path=dest_dir)
-            print("Successfully extracted zip archive to {}".format(dest_dir))
+            print(f"Successfully extracted zip archive to {dest_dir}")
 
     elif file_extension in ['.tar', '.gz', '.bz2']:
         with tarfile.open(file_path, 'r:*') as tarobj:
             tarobj.extractall(path=dest_dir)
-            print("Successfully extracted tar archive to {}".format(dest_dir))
+            print(f"Successfully extracted tar archive to {dest_dir}")
 
-    # 第三方库，需要预先pip install rarfile
-    # 此外，Windows上还需要安装winrar软件，配置其Path环境变量，如"C:\Program Files\WinRAR"才可以
     elif file_extension == '.rar':
         try:
             import rarfile
             with rarfile.RarFile(file_path) as rf:
                 rf.extractall(path=dest_dir)
-                print("Successfully extracted rar archive to {}".format(dest_dir))
+                print(f"Successfully extracted rar archive to {dest_dir}")
         except:
             print("Rar format requires additional dependencies to install")
             return '\n\n需要安装pip install rarfile来解压rar文件'
 
-    # 第三方库，需要预先pip install py7zr
     elif file_extension == '.7z':
         try:
             import py7zr
             with py7zr.SevenZipFile(file_path, mode='r') as f:
                 f.extractall(path=dest_dir)
-                print("Successfully extracted 7z archive to {}".format(dest_dir))
+                print(f"Successfully extracted 7z archive to {dest_dir}")
         except:
             print("7z format requires additional dependencies to install")
             return '\n\n需要安装pip install py7zr来解压7z文件'
@@ -360,9 +351,7 @@ def find_recent_files(directory):
         if file_path.endswith('.log'):
             continue
         created_time = os.path.getmtime(file_path)
-        if created_time >= one_minute_ago:
-            if os.path.isdir(file_path):
-                continue
+        if created_time >= one_minute_ago and not os.path.isdir(file_path):
             recent_files.append(file_path)
 
     return recent_files
@@ -388,8 +377,7 @@ def on_file_uploaded(files, chatbot, txt, txt2, checkboxes):
         shutil.copy(file.name, f'private_upload/{time_tag}/{file_origin_name}')
         err_msg += extract_archive(f'private_upload/{time_tag}/{file_origin_name}',
                                    dest_dir=f'private_upload/{time_tag}/{file_origin_name}.extract')
-    moved_files = [fp for fp in glob.glob(
-        'private_upload/**/*', recursive=True)]
+    moved_files = list(glob.glob('private_upload/**/*', recursive=True))
     if "底部输入区" in checkboxes:
         txt = ""
         txt2 = f'private_upload/{time_tag}'
@@ -418,19 +406,13 @@ def is_openai_api_key(key):
     return bool(API_MATCH)
 
 def is_api2d_key(key):
-    if key.startswith('fk') and len(key) == 41:
-        return True
-    else:
-        return False
+    return bool(key.startswith('fk') and len(key) == 41)
 
 def is_any_api_key(key):
-    if ',' in key:
-        keys = key.split(',')
-        for k in keys:
-            if is_any_api_key(k): return True
-        return False
-    else:
+    if ',' not in key:
         return is_openai_api_key(key) or is_api2d_key(key)
+    keys = key.split(',')
+    return any(is_any_api_key(k) for k in keys)
 
 def what_keys(keys):
     avail_key_list = {'OpenAI Key':0, "API2D Key":0}
@@ -452,18 +434,13 @@ def select_api_key(keys, llm_model):
     key_list = keys.split(',')
 
     if llm_model.startswith('gpt-'):
-        for k in key_list:
-            if is_openai_api_key(k): avail_key_list.append(k)
-
+        avail_key_list.extend(k for k in key_list if is_openai_api_key(k))
     if llm_model.startswith('api2d-'):
-        for k in key_list:
-            if is_api2d_key(k): avail_key_list.append(k)
-
-    if len(avail_key_list) == 0:
+        avail_key_list.extend(k for k in key_list if is_api2d_key(k))
+    if not avail_key_list:
         raise RuntimeError(f"您提供的api-key不满足要求，不包含任何可用于{llm_model}的api-key。您可能选择了错误的模型或请求源。")
 
-    api_key = random.choice(avail_key_list) # 随机负载均衡
-    return api_key
+    return random.choice(avail_key_list)
 
 @lru_cache(maxsize=128)
 def read_single_conf_with_lru_cache(arg):
@@ -475,7 +452,9 @@ def read_single_conf_with_lru_cache(arg):
     # 在读取API_KEY时，检查一下是不是忘了改config
     if arg == 'API_KEY':
         print亮蓝(f"[API_KEY] 本项目现已支持OpenAI和API2D的api-key。也支持同时填写多个api-key，如API_KEY=\"openai-key1,openai-key2,api2d-key3\"")
-        print亮蓝(f"[API_KEY] 您既可以在config.py中修改api-key(s)，也可以在问题输入区输入临时的api-key(s)，然后回车键提交后即可生效。")
+        print亮蓝(
+            "[API_KEY] 您既可以在config.py中修改api-key(s)，也可以在问题输入区输入临时的api-key(s)，然后回车键提交后即可生效。"
+        )
         if is_any_api_key(r):
             print亮绿(f"[API_KEY] 您的 API_KEY 是: {r[:15]}*** API_KEY 导入成功")
         else:

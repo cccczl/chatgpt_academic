@@ -44,9 +44,7 @@ class GetGLMHandle(Process):
                     else:
                         self.chatglm_model = AutoModel.from_pretrained("THUDM/chatglm-6b", trust_remote_code=True).half().cuda()
                     self.chatglm_model = self.chatglm_model.eval()
-                    break
-                else:
-                    break
+                break
             except:
                 retry += 1
                 if retry > 3: 
@@ -91,18 +89,19 @@ def predict_no_ui_long_connection(inputs, llm_kwargs, history=[], sys_prompt="",
             raise RuntimeError(error)
 
     # chatglm 没有 sys_prompt 接口，因此把prompt加入 history
-    history_feedin = []
-    history_feedin.append(["What can I do?", sys_prompt])
-    for i in range(len(history)//2):
-        history_feedin.append([history[2*i], history[2*i+1]] )
-
+    history_feedin = [["What can I do?", sys_prompt]]
+    history_feedin.extend(
+        [history[2 * i], history[2 * i + 1]] for i in range(len(history) // 2)
+    )
     watch_dog_patience = 5 # 看门狗 (watchdog) 的耐心, 设置5秒即可
     response = ""
     for response in glm_handle.stream_chat(query=inputs, history=history_feedin, max_length=llm_kwargs['max_length'], top_p=llm_kwargs['top_p'], temperature=llm_kwargs['temperature']):
         observe_window[0] = response
-        if len(observe_window) >= 2:  
-            if (time.time()-observe_window[1]) > watch_dog_patience:
-                raise RuntimeError("程序终止。")
+        if (
+            len(observe_window) >= 2
+            and (time.time() - observe_window[1]) > watch_dog_patience
+        ):
+            raise RuntimeError("程序终止。")
     return response
 
 
@@ -130,11 +129,10 @@ def predict(inputs, llm_kwargs, plugin_kwargs, chatbot, history=[], system_promp
         if "PreProcess" in core_functional[additional_fn]: inputs = core_functional[additional_fn]["PreProcess"](inputs)  # 获取预处理函数（如果有的话）
         inputs = core_functional[additional_fn]["Prefix"] + inputs + core_functional[additional_fn]["Suffix"]
 
-    history_feedin = []
-    history_feedin.append(["What can I do?", system_prompt] )
-    for i in range(len(history)//2):
-        history_feedin.append([history[2*i], history[2*i+1]] )
-
+    history_feedin = [["What can I do?", system_prompt]]
+    history_feedin.extend(
+        [history[2 * i], history[2 * i + 1]] for i in range(len(history) // 2)
+    )
     for response in glm_handle.stream_chat(query=inputs, history=history_feedin, max_length=llm_kwargs['max_length'], top_p=llm_kwargs['top_p'], temperature=llm_kwargs['temperature']):
         chatbot[-1] = (inputs, response)
         yield from update_ui(chatbot=chatbot, history=history)

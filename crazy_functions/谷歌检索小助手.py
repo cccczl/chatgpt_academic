@@ -55,7 +55,10 @@ def get_meta_information(url, chatbot, history):
             'is_paper_in_arxiv':is_paper_in_arxiv,
         })
 
-        chatbot[-1] = [chatbot[-1][0], title + f'\n\n是否在arxiv中（不在arxiv中无法获取完整摘要）:{is_paper_in_arxiv}\n\n' + abstract]
+        chatbot[-1] = [
+            chatbot[-1][0],
+            f'{title}\n\n是否在arxiv中（不在arxiv中无法获取完整摘要）:{is_paper_in_arxiv}\n\n{abstract}',
+        ]
         yield from update_ui(chatbot=chatbot, history=[]) # 刷新界面
     return profile
 
@@ -72,9 +75,12 @@ def 谷歌检索小助手(txt, llm_kwargs, plugin_kwargs, chatbot, history, syst
         import arxiv
         from bs4 import BeautifulSoup
     except:
-        report_execption(chatbot, history, 
-            a = f"解析项目: {txt}", 
-            b = f"导入软件依赖失败。使用该模块需要额外依赖，安装方法```pip install --upgrade beautifulsoup4 arxiv```。")
+        report_execption(
+            chatbot,
+            history,
+            a=f"解析项目: {txt}",
+            b="导入软件依赖失败。使用该模块需要额外依赖，安装方法```pip install --upgrade beautifulsoup4 arxiv```。",
+        )
         yield from update_ui(chatbot=chatbot, history=history) # 刷新界面
         return
 
@@ -102,5 +108,5 @@ def 谷歌检索小助手(txt, llm_kwargs, plugin_kwargs, chatbot, history, syst
     msg = '正常'
     yield from update_ui(chatbot=chatbot, history=history, msg=msg) # 刷新界面
     res = write_results_to_file(history)
-    chatbot.append(("完成了吗？", res)); 
+    chatbot.append(("完成了吗？", res));
     yield from update_ui(chatbot=chatbot, history=history, msg=msg) # 刷新界面

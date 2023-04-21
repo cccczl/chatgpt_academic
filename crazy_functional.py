@@ -99,97 +99,88 @@ def get_crazy_functions():
     from crazy_functions.批量Markdown翻译 import Markdown中译英
     from crazy_functions.批量Markdown翻译 import Markdown英译中
 
-    function_plugins.update({
+    function_plugins |= {
         "批量翻译PDF文档（多线程）": {
             "Color": "stop",
             "AsButton": True,  # 加入下拉菜单中
-            "Function": HotReload(批量翻译PDF文档)
+            "Function": HotReload(批量翻译PDF文档),
         },
-        "询问多个GPT模型": {
-            "Color": "stop",    # 按钮颜色
-            "Function": HotReload(同时问询)
-        },
+        "询问多个GPT模型": {"Color": "stop", "Function": HotReload(同时问询)},  # 按钮颜色
         "[测试功能] 批量总结PDF文档": {
             "Color": "stop",
             "AsButton": False,  # 加入下拉菜单中
             # HotReload 的意思是热更新，修改函数插件代码后，不需要重启程序，代码直接生效
-            "Function": HotReload(批量总结PDF文档)
+            "Function": HotReload(批量总结PDF文档),
         },
         "[测试功能] 批量总结PDF文档pdfminer": {
             "Color": "stop",
             "AsButton": False,  # 加入下拉菜单中
-            "Function": HotReload(批量总结PDF文档pdfminer)
+            "Function": HotReload(批量总结PDF文档pdfminer),
         },
         "谷歌学术检索助手（输入谷歌学术搜索页url）": {
             "Color": "stop",
             "AsButton": False,  # 加入下拉菜单中
-            "Function": HotReload(谷歌检索小助手)
+            "Function": HotReload(谷歌检索小助手),
         },
-
         "理解PDF文档内容 （模仿ChatPDF）": {
             # HotReload 的意思是热更新，修改函数插件代码后，不需要重启程序，代码直接生效
             "Color": "stop",
             "AsButton": False,  # 加入下拉菜单中
-            "Function": HotReload(理解PDF文档内容标准文件输入)
+            "Function": HotReload(理解PDF文档内容标准文件输入),
         },
         "[测试功能] 英文Latex项目全文润色（输入路径或上传压缩包）": {
             # HotReload 的意思是热更新，修改函数插件代码后，不需要重启程序，代码直接生效
             "Color": "stop",
             "AsButton": False,  # 加入下拉菜单中
-            "Function": HotReload(Latex英文润色)
+            "Function": HotReload(Latex英文润色),
         },
         "[测试功能] 中文Latex项目全文润色（输入路径或上传压缩包）": {
             # HotReload 的意思是热更新，修改函数插件代码后，不需要重启程序，代码直接生效
             "Color": "stop",
             "AsButton": False,  # 加入下拉菜单中
-            "Function": HotReload(Latex中文润色)
+            "Function": HotReload(Latex中文润色),
         },
         "[测试功能] Latex项目全文中译英（输入路径或上传压缩包）": {
             # HotReload 的意思是热更新，修改函数插件代码后，不需要重启程序，代码直接生效
             "Color": "stop",
             "AsButton": False,  # 加入下拉菜单中
-            "Function": HotReload(Latex中译英)
+            "Function": HotReload(Latex中译英),
         },
         "[测试功能] Latex项目全文英译中（输入路径或上传压缩包）": {
             # HotReload 的意思是热更新，修改函数插件代码后，不需要重启程序，代码直接生效
             "Color": "stop",
             "AsButton": False,  # 加入下拉菜单中
-            "Function": HotReload(Latex英译中)
+            "Function": HotReload(Latex英译中),
         },
         "[测试功能] 批量Markdown中译英（输入路径或上传压缩包）": {
             # HotReload 的意思是热更新，修改函数插件代码后，不需要重启程序，代码直接生效
             "Color": "stop",
             "AsButton": False,  # 加入下拉菜单中
-            "Function": HotReload(Markdown中译英)
+            "Function": HotReload(Markdown中译英),
         },
         "[测试功能] 批量Markdown英译中（输入路径或上传压缩包）": {
             # HotReload 的意思是热更新，修改函数插件代码后，不需要重启程序，代码直接生效
             "Color": "stop",
             "AsButton": False,  # 加入下拉菜单中
-            "Function": HotReload(Markdown英译中)
+            "Function": HotReload(Markdown英译中),
         },
-        
-    })
+    }
 
     ###################### 第三组插件 ###########################
     # [第三组插件]: 尚未充分测试的函数插件，放在这里
     from crazy_functions.下载arxiv论文翻译摘要 import 下载arxiv论文并翻译摘要
-    function_plugins.update({
-        "一键下载arxiv论文并翻译摘要（先在input输入编号，如1812.10695）": {
-            "Color": "stop",
-            "AsButton": False,  # 加入下拉菜单中
-            "Function": HotReload(下载arxiv论文并翻译摘要)
-        }
-    })
-        
+    function_plugins["一键下载arxiv论文并翻译摘要（先在input输入编号，如1812.10695）"] = {
+        "Color": "stop",
+        "AsButton": False,  # 加入下拉菜单中
+        "Function": HotReload(下载arxiv论文并翻译摘要),
+    }
+
     from crazy_functions.联网的ChatGPT import 连接网络回答问题
-    function_plugins.update({
-        "连接网络回答问题（先输入问题，再点击按钮，需要访问谷歌）": {
-            "Color": "stop",
-            "AsButton": False,  # 加入下拉菜单中
-            "Function": HotReload(连接网络回答问题)
-        }
-    })
+    function_plugins["连接网络回答问题（先输入问题，再点击按钮，需要访问谷歌）"] = {
+        "Color": "stop",
+        "AsButton": False,  # 加入下拉菜单中
+        "Function": HotReload(连接网络回答问题),
+    }
 
     ###################### 第n组插件 ###########################
     return function_plugins

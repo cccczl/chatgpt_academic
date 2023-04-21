@@ -7,10 +7,7 @@ from .crazy_utils import breakdown_txt_to_satisfy_token_limit
 def extract_code_block_carefully(txt):
     splitted = txt.split('```')
     n_code_block_seg = len(splitted) - 1
-    if n_code_block_seg <= 1: return txt
-    # 剩下的情况都开头除去 ``` 结尾除去一次 ```
-    txt_out = '```'.join(splitted[1:-1])
-    return txt_out
+    return txt if n_code_block_seg <= 1 else '```'.join(splitted[1:-1])
 
 
 
@@ -31,9 +28,12 @@ def 全项目切换英文(txt, llm_kwargs, plugin_kwargs, chatbot, history, sys_
     try:
         import tiktoken
     except:
-        report_execption(chatbot, history, 
-            a = f"解析项目: {txt}", 
-            b = f"导入软件依赖失败。使用该模块需要额外依赖，安装方法```pip install --upgrade tiktoken```。")
+        report_execption(
+            chatbot,
+            history,
+            a=f"解析项目: {txt}",
+            b="导入软件依赖失败。使用该模块需要额外依赖，安装方法```pip install --upgrade tiktoken```。",
+        )
         yield from update_ui(chatbot=chatbot, history=history) # 刷新界面
         return
 
@@ -95,7 +95,7 @@ def 全项目切换英文(txt, llm_kwargs, plugin_kwargs, chatbot, history, sys_
     for h in handles:
         h.daemon = True
         h.start()
-    chatbot.append(('开始了吗？', f'多线程操作已经开始'))
+    chatbot.append(('开始了吗？', '多线程操作已经开始'))
     yield from update_ui(chatbot=chatbot, history=history) # 刷新界面
 
     # 第8步：循环轮询各个线程是否执行完毕

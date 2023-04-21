@@ -61,9 +61,7 @@ class QNetwork(BasePolicy):
 
     def _predict(self, observation: th.Tensor, deterministic: bool = True) -> th.Tensor:
         q_values = self.forward(observation)
-        # Greedy action
-        action = q_values.argmax(dim=1).reshape(-1)
-        return action
+        return q_values.argmax(dim=1).reshape(-1)
 
     def _get_constructor_parameters(self) -> Dict[str, Any]:
         data = super()._get_constructor_parameters()
@@ -122,11 +120,7 @@ class DQNPolicy(BasePolicy):
         )
 
         if net_arch is None:
-            if features_extractor_class == FlattenExtractor:
-                net_arch = [64, 64]
-            else:
-                net_arch = []
-
+            net_arch = [64, 64] if features_extractor_class == FlattenExtractor else []
         self.net_arch = net_arch
         self.activation_fn = activation_fn
         self.normalize_images = normalize_images
