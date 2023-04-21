@@ -21,9 +21,12 @@ def 批量翻译PDF文档(txt, llm_kwargs, plugin_kwargs, chatbot, history, sys_
         import fitz
         import tiktoken
     except:
-        report_execption(chatbot, history,
-                         a=f"解析项目: {txt}",
-                         b=f"导入软件依赖失败。使用该模块需要额外依赖，安装方法```pip install --upgrade pymupdf tiktoken```。")
+        report_execption(
+            chatbot,
+            history,
+            a=f"解析项目: {txt}",
+            b="导入软件依赖失败。使用该模块需要额外依赖，安装方法```pip install --upgrade pymupdf tiktoken```。",
+        )
         yield from update_ui(chatbot=chatbot, history=history) # 刷新界面
         return
 
@@ -42,11 +45,12 @@ def 批量翻译PDF文档(txt, llm_kwargs, plugin_kwargs, chatbot, history, sys_
         return
 
     # 搜索需要处理的文件清单
-    file_manifest = [f for f in glob.glob(
-        f'{project_folder}/**/*.pdf', recursive=True)]
+    file_manifest = list(
+        glob.glob(f'{project_folder}/**/*.pdf', recursive=True)
+    )
 
     # 如果没找到任何文件
-    if len(file_manifest) == 0:
+    if not file_manifest:
         report_execption(chatbot, history,
                          a=f"解析项目: {txt}", b=f"找不到任何.tex或.pdf文件: {txt}")
         yield from update_ui(chatbot=chatbot, history=history) # 刷新界面

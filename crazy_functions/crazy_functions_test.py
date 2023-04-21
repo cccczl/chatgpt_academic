@@ -7,7 +7,7 @@
 def validate_path():
     import os, sys
     dir_name = os.path.dirname(__file__)
-    root_dir_assume = os.path.abspath(os.path.dirname(__file__) +  '/..')
+    root_dir_assume = os.path.abspath(f'{os.path.dirname(__file__)}/..')
     os.chdir(root_dir_assume)
     sys.path.append(root_dir_assume)
     
@@ -106,7 +106,9 @@ def test_联网回答问题():
     # txt = "钟离带什么圣遗物？"
     for cookies, cb, hist, msg in 连接网络回答问题(txt, llm_kwargs, plugin_kwargs, chatbot, history, system_prompt, web_port): 
         print("当前问答：", cb[-1][-1].replace("\n"," "))
-    for i, it in enumerate(cb): print亮蓝(it[0]); print亮黄(it[1])
+    for it in cb:
+        print亮蓝(it[0])
+        print亮黄(it[1])
 
 # test_解析一个Python项目()
 # test_Latex英文润色()

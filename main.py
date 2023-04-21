@@ -96,7 +96,12 @@ def main():
                         with gr.Accordion("点击展开“文件上传区”。上传本地文件可供红色函数插件调用。", open=False) as area_file_up:
                             file_upload = gr.Files(label="任何文件, 但推荐上传压缩文件(zip, tar)", file_count="multiple")
                 with gr.Accordion("更换模型 & SysPrompt & 交互界面布局", open=(LAYOUT == "TOP-DOWN")):
-                    system_prompt = gr.Textbox(show_label=True, placeholder=f"System Prompt", label="System prompt", value=initial_prompt)
+                    system_prompt = gr.Textbox(
+                        show_label=True,
+                        placeholder="System Prompt",
+                        label="System prompt",
+                        value=initial_prompt,
+                    )
                     top_p = gr.Slider(minimum=-0, maximum=1.0, value=1.0, step=0.01,interactive=True, label="Top-p (nucleus sampling)",)
                     temperature = gr.Slider(minimum=-0, maximum=2.0, value=1.0, step=0.01, interactive=True, label="Temperature",)
                     max_length_sl = gr.Slider(minimum=256, maximum=4096, value=512, step=1, interactive=True, label="Local LLM MaxLength",)
@@ -116,14 +121,16 @@ def main():
         # 功能区显示开关与功能区的互动
         def fn_area_visibility(a):
             ret = {}
-            ret.update({area_basic_fn: gr.update(visible=("基础功能区" in a))})
-            ret.update({area_crazy_fn: gr.update(visible=("函数插件区" in a))})
-            ret.update({area_input_primary: gr.update(visible=("底部输入区" not in a))})
-            ret.update({area_input_secondary: gr.update(visible=("底部输入区" in a))})
-            ret.update({clearBtn: gr.update(visible=("输入清除键" in a))})
-            ret.update({clearBtn2: gr.update(visible=("输入清除键" in a))})
-            if "底部输入区" in a: ret.update({txt: gr.update(value="")})
+            ret[area_basic_fn] = gr.update(visible=("基础功能区" in a))
+            ret[area_crazy_fn] = gr.update(visible=("函数插件区" in a))
+            ret[area_input_primary] = gr.update(visible=("底部输入区" not in a))
+            ret[area_input_secondary] = gr.update(visible=("底部输入区" in a))
+            ret[clearBtn] = gr.update(visible=("输入清除键" in a))
+            ret[clearBtn2] = gr.update(visible=("输入清除键" in a))
+            if "底部输入区" in a:
+                ret[txt] = gr.update(value="")
             return ret
+
         checkboxes.select(fn_area_visibility, [checkboxes], [area_basic_fn, area_crazy_fn, area_input_primary, area_input_secondary, txt, txt2, clearBtn, clearBtn2] )
         # 整理反复出现的控件句柄组合
         input_combo = [cookies, max_length_sl, md_dropdown, txt, txt2, top_p, temperature, chatbot, history, system_prompt]
@@ -154,14 +161,17 @@ def main():
         def on_dropdown_changed(k):
             variant = crazy_fns[k]["Color"] if "Color" in crazy_fns[k] else "secondary"
             return {switchy_bt: gr.update(value=k, variant=variant)}
+
         dropdown.select(on_dropdown_changed, [dropdown], [switchy_bt] )
         def on_md_dropdown_changed(k):
-            return {chatbot: gr.update(label="当前模型："+k)}
+            return {chatbot: gr.update(label=f"当前模型：{k}")}
+
         md_dropdown.select(on_md_dropdown_changed, [md_dropdown], [chatbot] )
         # 随变按钮的回调函数注册
         def route(k, *args, **kwargs):
             if k in [r"打开插件列表", r"请先从插件列表中选择"]: return 
             yield from ArgsGeneralWrapper(crazy_fns[k]["Function"])(*args, **kwargs)
+
         click_handle = switchy_bt.click(route,[switchy_bt, *input_combo, gr.State(PORT)], output_combo)
         click_handle.then(on_report_generated, [file_upload, chatbot], [file_upload, chatbot])
         # def expand_file_area(file_upload, area_file_up):
@@ -175,12 +185,13 @@ def main():
     # gradio的inbrowser触发不太稳定，回滚代码到原始的浏览器打开函数
     def auto_opentab_delay():
         import threading, webbrowser, time
-        print(f"如果浏览器没有自动打开，请复制并转到以下URL：")
+        print("如果浏览器没有自动打开，请复制并转到以下URL：")
         print(f"\t（亮色主题）: http://localhost:{PORT}")
         print(f"\t（暗色主题）: http://localhost:{PORT}/?__dark-theme=true")
         def open(): 
             time.sleep(2)       # 打开浏览器
             webbrowser.open_new_tab(f"http://localhost:{PORT}/?__dark-theme=true")
+
         threading.Thread(target=open, name="open-browser", daemon=True).start()
         threading.Thread(target=auto_update, name="self-upgrade", daemon=True).start()
         threading.Thread(target=warm_up_modules, name="warm-up", daemon=True).start()

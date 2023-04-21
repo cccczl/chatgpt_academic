@@ -19,7 +19,7 @@ def 解析docx(file_manifest, project_folder, llm_kwargs, plugin_kwargs, chatbot
             word.visible = False
             # 打开文件
             print('fp', os.getcwd())
-            doc = word.Documents.Open(os.getcwd() + '/' + fp)
+            doc = word.Documents.Open(f'{os.getcwd()}/{fp}')
             # file_content = doc.Content.Text
             doc = word.ActiveDocument
             file_content = doc.Range().Text
@@ -92,9 +92,12 @@ def 总结word文档(txt, llm_kwargs, plugin_kwargs, chatbot, history, system_pr
     try:
         from docx import Document
     except:
-        report_execption(chatbot, history,
-                         a=f"解析项目: {txt}",
-                         b=f"导入软件依赖失败。使用该模块需要额外依赖，安装方法```pip install --upgrade python-docx pywin32```。")
+        report_execption(
+            chatbot,
+            history,
+            a=f"解析项目: {txt}",
+            b="导入软件依赖失败。使用该模块需要额外依赖，安装方法```pip install --upgrade python-docx pywin32```。",
+        )
         yield from update_ui(chatbot=chatbot, history=history) # 刷新界面
         return
 
@@ -114,8 +117,9 @@ def 总结word文档(txt, llm_kwargs, plugin_kwargs, chatbot, history, system_pr
     if txt.endswith('.docx') or txt.endswith('.doc'):
         file_manifest = [txt]
     else:
-        file_manifest = [f for f in glob.glob(f'{project_folder}/**/*.docx', recursive=True)] + \
-                        [f for f in glob.glob(f'{project_folder}/**/*.doc', recursive=True)]
+        file_manifest = list(
+            glob.glob(f'{project_folder}/**/*.docx', recursive=True)
+        ) + list(glob.glob(f'{project_folder}/**/*.doc', recursive=True))
 
     # 如果没找到任何文件
     if len(file_manifest) == 0:

@@ -82,25 +82,27 @@ def predict_no_ui_long_connection(inputs, llm_kwargs, history=[], sys_prompt="",
         if not chunk.startswith('data:'): 
             error_msg = get_full_error(chunk.encode('utf8'), stream_response).decode()
             if "reduce the length" in error_msg:
-                raise ConnectionAbortedError("OpenAI拒绝了请求:" + error_msg)
+                raise ConnectionAbortedError(f"OpenAI拒绝了请求:{error_msg}")
             else:
-                raise RuntimeError("OpenAI拒绝了请求：" + error_msg)
+                raise RuntimeError(f"OpenAI拒绝了请求：{error_msg}")
         if ('data: [DONE]' in chunk): break # api2d 正常完成
         json_data = json.loads(chunk.lstrip('data:'))['choices'][0]
         delta = json_data["delta"]
         if len(delta) == 0: break
         if "role" in delta: continue
-        if "content" in delta: 
-            result += delta["content"]
-            if not console_slience: print(delta["content"], end='')
-            if observe_window is not None: 
-                # 观测窗，把已经获取的数据显示出去
-                if len(observe_window) >= 1: observe_window[0] += delta["content"]
+        if "content" not in delta:
+            raise RuntimeError(f"意外Json结构：{delta}")
+        result += delta["content"]
+        if not console_slience: print(delta["content"], end='')
+        if observe_window is not None: 
+            # 观测窗，把已经获取的数据显示出去
+            if len(observe_window) >= 1: observe_window[0] += delta["content"]
                 # 看门狗，如果超过期限没有喂狗，则终止
-                if len(observe_window) >= 2:  
-                    if (time.time()-observe_window[1]) > watch_dog_patience:
-                        raise RuntimeError("用户取消了程序。")
-        else: raise RuntimeError("意外Json结构："+delta)
+            if (
+                len(observe_window) >= 2
+                and (time.time() - observe_window[1]) > watch_dog_patience
+            ):
+                raise RuntimeError("用户取消了程序。")
     if json_data['finish_reason'] == 'length':
         raise ConnectionAbortedError("正常结束，但显示Token不足，导致输出不完整，请削减单次输入的文本量。")
     return result
@@ -144,8 +146,9 @@ def predict(inputs, llm_kwargs, plugin_kwargs, chatbot, history=[], system_promp
         chatbot[-1] = (inputs, f"您提供的api-key不满足要求，不包含任何可用于{llm_kwargs['llm_model']}的api-key。您可能选择了错误的模型或请求源。")
         yield from update_ui(chatbot=chatbot, history=history, msg="api-key不满足要求") # 刷新界面
         return
-        
-    history.append(inputs); history.append(" ")
+
+    history.append(inputs)
+    history.append(" ")
 
     retry = 0
     while True:
@@ -159,11 +162,11 @@ def predict(inputs, llm_kwargs, plugin_kwargs, chatbot, history=[], system_promp
             retry += 1
             chatbot[-1] = ((chatbot[-1][0], timeout_bot_msg))
             retry_msg = f"，正在重试 ({retry}/{MAX_RETRY}) ……" if MAX_RETRY > 0 else ""
-            yield from update_ui(chatbot=chatbot, history=history, msg="请求超时"+retry_msg) # 刷新界面
+            yield from update_ui(chatbot=chatbot, history=history, msg=f"请求超时{retry_msg}")
             if retry > MAX_RETRY: raise TimeoutError
 
     gpt_replying_buffer = ""
-    
+
     is_head_of_the_stream = True
     if stream:
         stream_response =  response.iter_lines()
@@ -173,7 +176,7 @@ def predict(inputs, llm_kwargs, plugin_kwargs, chatbot, history=[], system_promp
             if is_head_of_the_stream and (r'"object":"error"' not in chunk.decode()):
                 # 数据流的第一帧不携带content
                 is_head_of_the_stream = False; continue
-            
+
             if chunk:
                 try:
                     chunk_decoded = chunk.decode()
@@ -214,7 +217,11 @@ def predict(inputs, llm_kwargs, plugin_kwargs, chatbot, history=[], system_promp
                         from toolbox import regular_txt_to_markdown
                         tb_str = '```\n' + traceback.format_exc() + '```'
                         chatbot[-1] = (chatbot[-1][0], f"[Local Message] 异常 \n\n{tb_str} \n\n{regular_txt_to_markdown(chunk_decoded[4:])}")
-                    yield from update_ui(chatbot=chatbot, history=history, msg="Json异常" + error_msg) # 刷新界面
+                    yield from update_ui(
+                        chatbot=chatbot,
+                        history=history,
+                        msg=f"Json异常{error_msg}",
+                    )
                     return
 
 def generate_payload(inputs, llm_kwargs, history, system_prompt, stream):
@@ -236,23 +243,16 @@ def generate_payload(inputs, llm_kwargs, history, system_prompt, stream):
     messages = [{"role": "system", "content": system_prompt}]
     if conversation_cnt:
         for index in range(0, 2*conversation_cnt, 2):
-            what_i_have_asked = {}
-            what_i_have_asked["role"] = "user"
-            what_i_have_asked["content"] = history[index]
-            what_gpt_answer = {}
-            what_gpt_answer["role"] = "assistant"
-            what_gpt_answer["content"] = history[index+1]
+            what_i_have_asked = {"role": "user", "content": history[index]}
+            what_gpt_answer = {"role": "assistant", "content": history[index+1]}
             if what_i_have_asked["content"] != "":
                 if what_gpt_answer["content"] == "": continue
                 if what_gpt_answer["content"] == timeout_bot_msg: continue
-                messages.append(what_i_have_asked)
-                messages.append(what_gpt_answer)
+                messages.extend((what_i_have_asked, what_gpt_answer))
             else:
                 messages[-1]['content'] = what_gpt_answer['content']
 
-    what_i_ask_now = {}
-    what_i_ask_now["role"] = "user"
-    what_i_ask_now["content"] = inputs
+    what_i_ask_now = {"role": "user", "content": inputs}
     messages.append(what_i_ask_now)
 
     payload = {
